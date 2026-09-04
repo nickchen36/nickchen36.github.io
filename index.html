@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World Clock</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap">
+  <style>
+    :root {
+      --bg:           #F2F7FC;
+      --surface:      #FFFFFF;
+      --surface-alt:  #E6EFF8;
+      --border:       #C6D9EC;
+      --text:         #0C1A27;
+      --text-muted:   #5178A0;
+      --accent:       #1872C4;
+      --accent-dim:   rgba(24,114,196,0.12);
+      --green:        #0F9B6A;
+      --green-dim:    rgba(15,155,106,0.14);
+      --bar-track:    #D4E5F5;
+      --bar-fill:     #1872C4;
+      --shadow:       0 1px 3px rgba(12,26,39,0.08), 0 4px 12px rgba(12,26,39,0.04);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg:          #0F1923;
+        --surface:     #16232F;
+        --surface-alt: #1C2E3E;
+        --border:      #243848;
+        --text:        #E4EEF7;
+        --text-muted:  #7A9BB8;
+        --accent:      #4CA8E8;
+        --accent-dim:  rgba(76,168,232,0.12);
+        --green:       #3DCF8E;
+        --green-dim:   rgba(61,207,142,0.12);
+        --bar-track:   #1E3347;
+        --bar-fill:    #4CA8E8;
+        --shadow:      0 1px 4px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg:          #0F1923;
+      --surface:     #16232F;
+      --surface-alt: #1C2E3E;
+      --border:      #243848;
+      --text:        #E4EEF7;
+      --text-muted:  #7A9BB8;
+      --accent:      #4CA8E8;
+      --accent-dim:  rgba(76,168,232,0.12);
+      --green:       #3DCF8E;
+      --green-dim:   rgba(61,207,142,0.12);
+      --bar-track:   #1E3347;
+      --bar-fill:    #4CA8E8;
+      --shadow:      0 1px 4px rgba(0,0,0,0.3), 0 4px 16px rgba(0,0,0,0.2);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1.25rem 3rem;
+    }
+
+    header {
+      max-width: 1200px;
+      margin: 0 auto 2.5rem;
+      display: flex;
+      align-items: baseline;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .site-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .site-subtitle {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    #utc-now {
+      margin-left: auto;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    .grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.25rem 1rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      transition: border-color 0.15s;
+    }
+
+    .card.is-local {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .flag {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    .city {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text);
+    }
+
+    .local-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+    }
+
+    .time-display {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: clamp(1.8rem, 3.5vw, 2.4rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin-bottom: 0.2rem;
+    }
+
+    .time-display .seconds {
+      font-weight: 300;
+      color: var(--text-muted);
+      font-size: 0.72em;
+    }
+
+    .date-line {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.1rem;
+    }
+
+    .tz-abbr {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      letter-spacing: 0.04em;
+    }
+
+    .utc-offset {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .day-bar-wrap {
+      margin-top: 0.9rem;
+    }
+
+    .day-bar-track {
+      height: 3px;
+      background: var(--bar-track);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* noon tick — the bar reads midnight to midnight, so the midpoint is the anchor */
+    .day-bar-track::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -2px;
+      width: 1px;
+      height: 7px;
+      background: var(--border);
+    }
+
+    .day-bar-fill {
+      height: 100%;
+      background: var(--bar-fill);
+      border-radius: 2px;
+      transition: width 1s linear;
+    }
+
+    footer {
+      max-width: 1200px;
+      margin: 2.5rem auto 0;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: 0.03em;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .day-bar-fill { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="site-title">World Clock</span>
+    <span class="site-subtitle">12 time zones &middot; live</span>
+    <span id="utc-now">UTC&thinsp;&mdash;</span>
+  </header>
+
+  <div class="grid" id="grid"></div>
+
+  <footer id="footer"></footer>
+
+  <script>
+    const zones = [
+      { city: "Los Angeles",  tz: "America/Los_Angeles", flag: "🇺🇸" },
+      { city: "Chicago",      tz: "America/Chicago",     flag: "🇺🇸" },
+      { city: "New York",     tz: "America/New_York",    flag: "🇺🇸" },
+      { city: "São Paulo",    tz: "America/Sao_Paulo",   flag: "🇧🇷" },
+      { city: "London",       tz: "Europe/London",       flag: "🇬🇧" },
+      { city: "Paris",        tz: "Europe/Paris",        flag: "🇫🇷" },
+      { city: "Dubai",        tz: "Asia/Dubai",          flag: "🇦🇪" },
+      { city: "Mumbai",       tz: "Asia/Kolkata",        flag: "🇮🇳" },
+      { city: "Singapore",    tz: "Asia/Singapore",      flag: "🇸🇬" },
+      { city: "Tokyo",        tz: "Asia/Tokyo",          flag: "🇯🇵" },
+      { city: "Sydney",       tz: "Australia/Sydney",    flag: "🇦🇺" },
+      { city: "UTC",          tz: "UTC",                 flag: "🌐" },
+    ];
+
+    const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    function makeFormatters(tz) {
+      return {
+        // hourCycle h23 keeps midnight at 00, not 24
+        clock: new Intl.DateTimeFormat("en-US", {
+          timeZone: tz, hourCycle: "h23",
+          hour: "2-digit", minute: "2-digit", second: "2-digit"
+        }),
+        date: new Intl.DateTimeFormat("en-US", {
+          timeZone: tz, weekday: "short", month: "short", day: "numeric"
+        }),
+        abbr: new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" }),
+        offset: new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "shortOffset" }),
+      };
+    }
+
+    function part(formatter, date, type) {
+      return formatter.formatToParts(date).find(p => p.type === type)?.value ?? "";
+    }
+
+    const grid = document.getElementById("grid");
+    const cards = [];
+
+    zones.forEach((z, i) => {
+      const isLocal = z.tz === localTz;
+      const el = document.createElement("div");
+      el.className = "card" + (isLocal ? " is-local" : "");
+      el.innerHTML = `
+        <div class="card-header">
+          <span class="flag">${z.flag}</span>
+          <span class="city">${z.city}</span>
+          ${isLocal ? '<span class="local-badge">Your time</span>' : ""}
+        </div>
+        <div class="time-display">
+          <span class="hm"></span><span class="seconds"></span>
+        </div>
+        <div class="date-line"></div>
+        <div class="meta-row">
+          <span class="tz-abbr"></span>
+          <span class="utc-offset"></span>
+        </div>
+        <div class="day-bar-wrap">
+          <div class="day-bar-track">
+            <div class="day-bar-fill" style="width:0%"></div>
+          </div>
+        </div>
+      `;
+      grid.appendChild(el);
+      cards.push({
+        fmts: makeFormatters(z.tz),
+        hm:     el.querySelector(".hm"),
+        sec:    el.querySelector(".seconds"),
+        date:   el.querySelector(".date-line"),
+        abbr:   el.querySelector(".tz-abbr"),
+        offset: el.querySelector(".utc-offset"),
+        bar:    el.querySelector(".day-bar-fill"),
+      });
+    });
+
+    const utcClock = new Intl.DateTimeFormat("en-US", {
+      timeZone: "UTC", hourCycle: "h23",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    });
+
+    document.getElementById("footer").textContent =
+      "Times refresh every second · Computed in your browser from the IANA time zone database";
+
+    function tick() {
+      const now = new Date();
+      document.getElementById("utc-now").textContent = "UTC " + utcClock.format(now);
+
+      cards.forEach(c => {
+        const h = part(c.fmts.clock, now, "hour");
+        const m = part(c.fmts.clock, now, "minute");
+        const s = part(c.fmts.clock, now, "second");
+
+        c.hm.textContent     = `${h}:${m}`;
+        c.sec.textContent    = `:${s}`;
+        c.date.textContent   = c.fmts.date.format(now);
+        const rawOffset = part(c.fmts.offset, now, "timeZoneName");
+        c.offset.textContent = rawOffset === "GMT" ? "UTC+0" : rawOffset.replace("GMT", "UTC");
+
+        // Most zones have no real abbreviation — CLDR falls back to "GMT+9",
+        // which would just restate the offset shown beside it.
+        const abbr = part(c.fmts.abbr, now, "timeZoneName");
+        const hasRealAbbr = !/^(GMT|UTC)/.test(abbr);
+        c.abbr.textContent = abbr;
+        c.abbr.hidden = !hasRealAbbr;
+
+        const elapsed = (+h * 3600 + +m * 60 + +s) / 86400 * 100;
+        c.bar.style.width = elapsed.toFixed(3) + "%";
+      });
+    }
+
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
